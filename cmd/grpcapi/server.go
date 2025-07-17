@@ -43,8 +43,6 @@ func createMongoDBClient() {
 	defer func() {
 		if err := client.Disconnect(ctx); err != nil {
 			log.Fatalln("Unable to disconnect to mongodb:", err)
-		} else {
-			log.Println("Disconnected to mongodb")
 		}
 	}()
 

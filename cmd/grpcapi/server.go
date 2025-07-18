@@ -1,17 +1,14 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net"
 	"os"
-	"time"
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"jsantdev.com/grpc_sm_api/internals/api/handlers"
-	"jsantdev.com/grpc_sm_api/internals/repositories/mongodb"
 	pb "jsantdev.com/grpc_sm_api/proto/gen"
 )
 
@@ -24,31 +21,32 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to load .env file: %v", err)
 	}
-	cert := "../../cert/cert.pem"
-	key := "../../cert/key.pem"
-	createMongoDBClient()
+	// cert := "../../cert/cert.pem"
+	// key := "../../cert/key.pem"
+	cert := os.Getenv("CERT_FILE")
+	key := os.Getenv("KEY_FILE")
 	runGRPCServer(cert, key)
 
 }
 
-func createMongoDBClient() {
-	log.Println("Connecting to mongodb...")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
-	defer cancel()
-	client, err := mongodb.CreateMongoClient(ctx)
-	if err != nil {
-		log.Fatalln("Unable to connect to mongodb:", err)
-	}
+// func createMongoDBClient() {
+// 	log.Println("Connecting to mongodb...")
+// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+// 	defer cancel()
+// 	client, err := mongodb.CreateMongoClient(ctx)
+// 	if err != nil {
+// 		log.Fatalln("Unable to connect to mongodb:", err)
+// 	}
 
-	//PR from dev branch
-	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
-			log.Fatalln("Unable to disconnect to mongodb:", err)
-		}
-	}()
+// 	//PR from dev branch
+// 	defer func() {
+// 		if err := client.Disconnect(ctx); err != nil {
+// 			log.Fatalln("Unable to disconnect to mongodb:", err)
+// 		}
+// 	}()
 
-	log.Println("Connected to mongodb")
-}
+// 	log.Println("Connected to mongodb")
+// }
 
 func runGRPCServer(certFile, keyFile string) {
 

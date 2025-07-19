@@ -26,3 +26,16 @@ func (s *Server) AddTeachers(ctx context.Context, req *pb.Teachers) (*pb.Teacher
 	return &pb.Teachers{Teachers: addedTeachers}, nil
 
 }
+
+func (s *Server) GetTeachers(ctx context.Context, req *pb.GetTeachersRequest) (*pb.Teachers, error) {
+
+	teacherFilter := req.GetTeacher()
+	sortFields := req.GetSortBy()
+
+	teachers, err := mongodb.GetTeachers(ctx, teacherFilter, sortFields)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.Teachers{Teachers: teachers}, nil
+}

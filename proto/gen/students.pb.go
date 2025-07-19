@@ -25,18 +25,18 @@ type Order int32
 
 const (
 	Order_ASC  Order = 0
-	Order_DESC Order = 2
+	Order_DESC Order = 1
 )
 
 // Enum value maps for Order.
 var (
 	Order_name = map[int32]string{
 		0: "ASC",
-		2: "DESC",
+		1: "DESC",
 	}
 	Order_value = map[string]int32{
 		"ASC":  0,
-		"DESC": 2,
+		"DESC": 1,
 	}
 )
 
@@ -481,7 +481,7 @@ const file_students_proto_rawDesc = "" +
 	"\bstudents\x18\x01 \x03(\v2\r.main.StudentR\bstudents*\x1a\n" +
 	"\x05Order\x12\a\n" +
 	"\x03ASC\x10\x00\x12\b\n" +
-	"\x04DESC\x10\x022\xf0\x01\n" +
+	"\x04DESC\x10\x012\xf0\x01\n" +
 	"\x0eStudentService\x127\n" +
 	"\vGetStudents\x12\x18.main.GetStudentsRequest\x1a\x0e.main.Students\x12-\n" +
 	"\vAddStudents\x12\x0e.main.Students\x1a\x0e.main.Students\x120\n" +

@@ -40,7 +40,7 @@ message  SortField {
 
 enum Order {
   ASC = 0;
-  DESC = 2;
+  DESC = 1;
 }
 
 message Student {

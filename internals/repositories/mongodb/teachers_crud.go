@@ -25,7 +25,7 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 		}
 	}()
 
-	newTeachers := make([]models.Teacher, len(teachersFromReq))
+	newTeachers := make([]models.AddTeacherRequest, len(teachersFromReq))
 
 	for i, pbTeacher := range teachersFromReq {
 		modelTeacher := mapPBTeacherToModel(pbTeacher)
@@ -38,12 +38,13 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "Unable to add value to database")
 		}
-		objectId, ok := result.InsertedID.(bson.ObjectID)
-		if ok {
-			teacher.Id = objectId.Hex()
-		}
 
 		pbTeacher := mapModelTeacherToPB(teacher)
+
+		objectId, ok := result.InsertedID.(bson.ObjectID)
+		if ok {
+			pbTeacher.Id = objectId.Hex()
+		}
 
 		addedTeachers = append(addedTeachers, pbTeacher)
 	}
@@ -51,7 +52,7 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 	return addedTeachers, nil
 }
 
-func mapModelTeacherToPB(teacher models.Teacher) *pb.Teacher {
+func mapModelTeacherToPB(teacher models.AddTeacherRequest) *pb.Teacher {
 	pbTeacher := &pb.Teacher{}
 	modelVal := reflect.ValueOf(teacher)
 	pbVal := reflect.ValueOf(pbTeacher).Elem()
@@ -67,8 +68,8 @@ func mapModelTeacherToPB(teacher models.Teacher) *pb.Teacher {
 	return pbTeacher
 }
 
-func mapPBTeacherToModel(pbTeacher *pb.Teacher) models.Teacher {
-	modelTeacher := models.Teacher{}
+func mapPBTeacherToModel(pbTeacher *pb.Teacher) models.AddTeacherRequest {
+	modelTeacher := models.AddTeacherRequest{}
 
 	pbVal := reflect.ValueOf(pbTeacher).Elem()
 	modelVal := reflect.ValueOf(&modelTeacher).Elem()
@@ -113,7 +114,7 @@ func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFiel
 
 	var teachers []*pb.Teacher
 	for cursor.Next(ctx) {
-		var teacher models.TeacherDto
+		var teacher models.Teacher
 		err := cursor.Decode(&teacher)
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "Unable to decode data")

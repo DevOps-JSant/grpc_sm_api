@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"reflect"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -88,13 +87,13 @@ func mapPBTeacherToModel(pbTeacher *pb.Teacher) models.AddTeacherRequest {
 
 func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFieldsFromReq []*pb.SortField) ([]*pb.Teacher, error) {
 	// Filtering, getting the filters from the request
-	filters, err := buildFilterForTeachers(teacherFilterFromReq)
+	filters, err := utils.BuildFilter(teacherFilterFromReq, &models.Teacher{})
 	if err != nil {
 		return nil, err
 	}
 
 	// Sorting. getting the sort options from the request
-	sortOptions := buildSortOptions(sortFieldsFromReq)
+	sortOptions := utils.BuildSortOptions(sortFieldsFromReq)
 
 	// Access the database to fetch data
 	client, err := CreateMongoClient(ctx)
@@ -137,75 +136,4 @@ func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFiel
 	}
 
 	return teachers, nil
-}
-
-func buildFilterForTeachers(teacherFilter *pb.Teacher) (bson.M, error) {
-	filter := bson.M{}
-
-	if teacherFilter == nil {
-		return filter, nil
-	}
-
-	// Mapping pb.Teacher fields to models.Teacher
-	var modelTeacher models.Teacher
-	modelVal := reflect.ValueOf(&modelTeacher).Elem()
-	modelType := modelVal.Type()
-
-	// reqTeacher := req.GetTeacher()
-	reqVal := reflect.ValueOf(teacherFilter).Elem()
-	reqType := reqVal.Type()
-
-	for i := range reqVal.NumField() {
-		fieldVal := reqVal.Field(i)
-		fieldName := reqType.Field(i).Name
-
-		if fieldVal.IsValid() && !fieldVal.IsZero() {
-			modelField := modelVal.FieldByName(fieldName)
-			if modelField.IsValid() && modelField.CanSet() {
-				if fieldName == "Id" {
-					objectId, err := bson.ObjectIDFromHex(teacherFilter.Id)
-					if err != nil {
-						return nil, utils.ErrorHandler(err, "Invalid id")
-					}
-					modelTeacher.Id = objectId
-				} else {
-					modelField.Set(fieldVal)
-				}
-			}
-		}
-	}
-
-	// Iterate over the modelTeacher to build filter using bson.M
-	for i := range modelVal.NumField() {
-		fieldVal := modelVal.Field(i)
-
-		if fieldVal.IsValid() && !fieldVal.IsZero() {
-			bsonTag := modelType.Field(i).Tag.Get("bson")
-			bsonTag = strings.TrimSuffix(bsonTag, ",omitempty")
-			if bsonTag == "_id" {
-				objectId, err := bson.ObjectIDFromHex(teacherFilter.Id)
-				if err != nil {
-					return nil, utils.ErrorHandler(err, "Invalid id")
-				}
-				filter[bsonTag] = objectId
-			} else {
-				filter[bsonTag] = fieldVal.Interface().(string)
-			}
-		}
-	}
-	return filter, nil
-}
-
-func buildSortOptions(sortFields []*pb.SortField) bson.D {
-	var sortOptions bson.D
-
-	for _, sortField := range sortFields {
-		order := 1
-		if sortField.GetOrder() == pb.Order_DESC {
-			order = -1
-		}
-
-		sortOptions = append(sortOptions, bson.E{Key: sortField.Field, Value: order})
-	}
-	return sortOptions
 }

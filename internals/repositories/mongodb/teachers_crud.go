@@ -25,7 +25,7 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 		}
 	}()
 
-	newTeachers := make([]models.Teacher, len(teachersFromReq))
+	newTeachers := make([]models.AddTeacherRequest, len(teachersFromReq))
 
 	for i, pbTeacher := range teachersFromReq {
 		modelTeacher := mapPBTeacherToModel(pbTeacher)
@@ -38,12 +38,13 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "Unable to add value to database")
 		}
-		objectId, ok := result.InsertedID.(bson.ObjectID)
-		if ok {
-			teacher.Id = objectId.Hex()
-		}
 
 		pbTeacher := mapModelTeacherToPB(teacher)
+
+		objectId, ok := result.InsertedID.(bson.ObjectID)
+		if ok {
+			pbTeacher.Id = objectId.Hex()
+		}
 
 		addedTeachers = append(addedTeachers, pbTeacher)
 	}
@@ -51,7 +52,7 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 	return addedTeachers, nil
 }
 
-func mapModelTeacherToPB(teacher models.Teacher) *pb.Teacher {
+func mapModelTeacherToPB(teacher models.AddTeacherRequest) *pb.Teacher {
 	pbTeacher := &pb.Teacher{}
 	modelVal := reflect.ValueOf(teacher)
 	pbVal := reflect.ValueOf(pbTeacher).Elem()
@@ -67,8 +68,8 @@ func mapModelTeacherToPB(teacher models.Teacher) *pb.Teacher {
 	return pbTeacher
 }
 
-func mapPBTeacherToModel(pbTeacher *pb.Teacher) models.Teacher {
-	modelTeacher := models.Teacher{}
+func mapPBTeacherToModel(pbTeacher *pb.Teacher) models.AddTeacherRequest {
+	modelTeacher := models.AddTeacherRequest{}
 
 	pbVal := reflect.ValueOf(pbTeacher).Elem()
 	modelVal := reflect.ValueOf(&modelTeacher).Elem()
@@ -87,10 +88,13 @@ func mapPBTeacherToModel(pbTeacher *pb.Teacher) models.Teacher {
 
 func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFieldsFromReq []*pb.SortField) ([]*pb.Teacher, error) {
 	// Filtering, getting the filters from the request
-	filter := buildFilterForTeachers(teacherFilterFromReq)
+	filters, err := buildFilterForTeachers(teacherFilterFromReq)
+	if err != nil {
+		return nil, err
+	}
 
 	// Sorting. getting the sort options from the request
-	sort := buildSortOptions(sortFieldsFromReq)
+	sortOptions := buildSortOptions(sortFieldsFromReq)
 
 	// Access the database to fetch data
 	client, err := CreateMongoClient(ctx)
@@ -105,7 +109,11 @@ func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFiel
 
 	col := client.Database("school").Collection("teachers")
 	var cursor *mongo.Cursor
-	cursor, err = col.Find(ctx, filter, options.Find().SetSort(sort))
+	if len(sortOptions) > 0 {
+		cursor, err = col.Find(ctx, filters, options.Find().SetSort(sortOptions))
+	} else {
+		cursor, err = col.Find(ctx, filters)
+	}
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "Unable to retrieve data")
 	}
@@ -113,7 +121,7 @@ func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFiel
 
 	var teachers []*pb.Teacher
 	for cursor.Next(ctx) {
-		var teacher models.TeacherDto
+		var teacher models.Teacher
 		err := cursor.Decode(&teacher)
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "Unable to decode data")
@@ -131,8 +139,12 @@ func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFiel
 	return teachers, nil
 }
 
-func buildFilterForTeachers(teacherFilter *pb.Teacher) bson.M {
+func buildFilterForTeachers(teacherFilter *pb.Teacher) (bson.M, error) {
 	filter := bson.M{}
+
+	if teacherFilter == nil {
+		return filter, nil
+	}
 
 	// Mapping pb.Teacher fields to models.Teacher
 	var modelTeacher models.Teacher
@@ -150,7 +162,15 @@ func buildFilterForTeachers(teacherFilter *pb.Teacher) bson.M {
 		if fieldVal.IsValid() && !fieldVal.IsZero() {
 			modelField := modelVal.FieldByName(fieldName)
 			if modelField.IsValid() && modelField.CanSet() {
-				modelField.Set(fieldVal)
+				if fieldName == "Id" {
+					objectId, err := bson.ObjectIDFromHex(teacherFilter.Id)
+					if err != nil {
+						return nil, utils.ErrorHandler(err, "Invalid id")
+					}
+					modelTeacher.Id = objectId
+				} else {
+					modelField.Set(fieldVal)
+				}
 			}
 		}
 	}
@@ -162,10 +182,18 @@ func buildFilterForTeachers(teacherFilter *pb.Teacher) bson.M {
 		if fieldVal.IsValid() && !fieldVal.IsZero() {
 			bsonTag := modelType.Field(i).Tag.Get("bson")
 			bsonTag = strings.TrimSuffix(bsonTag, ",omitempty")
-			filter[bsonTag] = fieldVal.Interface().(string)
+			if bsonTag == "_id" {
+				objectId, err := bson.ObjectIDFromHex(teacherFilter.Id)
+				if err != nil {
+					return nil, utils.ErrorHandler(err, "Invalid id")
+				}
+				filter[bsonTag] = objectId
+			} else {
+				filter[bsonTag] = fieldVal.Interface().(string)
+			}
 		}
 	}
-	return filter
+	return filter, nil
 }
 
 func buildSortOptions(sortFields []*pb.SortField) bson.D {

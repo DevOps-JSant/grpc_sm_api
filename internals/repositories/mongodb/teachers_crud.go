@@ -27,7 +27,7 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 	newTeachers := make([]models.AddTeacherRequest, len(teachersFromReq))
 
 	for i, pbTeacher := range teachersFromReq {
-		modelTeacher := mapPBTeacherToModel(pbTeacher)
+		modelTeacher := utils.MapPBToModel(models.AddTeacherRequest{}, pbTeacher)
 		newTeachers[i] = modelTeacher
 	}
 
@@ -38,7 +38,8 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 			return nil, utils.ErrorHandler(err, "Unable to add value to database")
 		}
 
-		pbTeacher := mapModelTeacherToPB(teacher)
+		// pbTeacher := mapModelTeacherToPB(teacher)
+		pbTeacher := utils.MapModelToPB(pb.Teacher{}, teacher)
 
 		objectId, ok := result.InsertedID.(bson.ObjectID)
 		if ok {

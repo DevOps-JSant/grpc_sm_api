@@ -118,3 +118,38 @@ func DecodeEntities[M interface{}, T interface{}](ctx context.Context, cursor *m
 	}
 	return entities, nil
 }
+
+func MapModelToPB[T1 any, T2 any](pb T1, model T2) *T1 {
+	pbResult := &pb
+	modelVal := reflect.ValueOf(model)
+	pbVal := reflect.ValueOf(pbResult).Elem()
+
+	for i := range modelVal.NumField() {
+		modelField := modelVal.Field(i)
+		modelFieldType := modelVal.Type().Field(i)
+		pbField := pbVal.FieldByName(modelFieldType.Name)
+		if pbField.IsValid() && pbField.CanSet() {
+			pbField.Set(modelField)
+		}
+	}
+	return pbResult
+
+}
+
+func MapPBToModel[T1 any, T2 any](model T1, pb T2) T1 {
+	modelResult := model
+
+	pbVal := reflect.ValueOf(pb).Elem()
+	modelVal := reflect.ValueOf(&modelResult).Elem()
+
+	for i := 0; i < pbVal.NumField(); i++ {
+		pbField := pbVal.Field(i)
+		fieldName := pbVal.Type().Field(i).Name
+
+		modelField := modelVal.FieldByName(fieldName)
+		if modelField.IsValid() && modelField.CanSet() {
+			modelField.Set(pbField)
+		}
+	}
+	return modelResult
+}

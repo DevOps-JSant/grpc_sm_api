@@ -118,6 +118,15 @@ func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFiel
 	}
 	defer cursor.Close(ctx)
 
+	teachers, err := decodeTeachers(ctx, cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	return teachers, nil
+}
+
+func decodeTeachers(ctx context.Context, cursor *mongo.Cursor) ([]*pb.Teacher, error) {
 	var teachers []*pb.Teacher
 	for cursor.Next(ctx) {
 		var teacher models.Teacher
@@ -125,15 +134,29 @@ func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFiel
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "Unable to decode data")
 		}
-		teachers = append(teachers, &pb.Teacher{
-			Id:        teacher.Id.Hex(),
-			FirstName: teacher.FirstName,
-			LastName:  teacher.LastName,
-			Email:     teacher.Email,
-			Class:     teacher.Class,
-			Subject:   teacher.Subject,
-		})
-	}
 
+		pbTeacher := &pb.Teacher{}
+		modelVal := reflect.ValueOf(teacher)
+		pbVal := reflect.ValueOf(pbTeacher).Elem()
+
+		for i := range modelVal.NumField() {
+			modelField := modelVal.Field(i)
+			modelFieldName := modelVal.Type().Field(i).Name
+
+			pbField := pbVal.FieldByName(modelFieldName)
+			if pbField.IsValid() && pbField.CanSet() {
+				if modelFieldName == "Id" {
+					objectId := modelVal.FieldByName(modelFieldName).Interface().(bson.ObjectID).Hex()
+					// if err != nil {
+					// 	return nil, utils.ErrorHandler(err, "Invalid id")
+					// }
+					pbField.Set(reflect.ValueOf(objectId))
+				} else {
+					pbField.Set(modelField)
+				}
+			}
+		}
+		teachers = append(teachers, pbTeacher)
+	}
 	return teachers, nil
 }

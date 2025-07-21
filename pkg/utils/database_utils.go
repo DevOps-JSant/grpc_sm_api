@@ -119,9 +119,10 @@ func DecodeEntities[M interface{}, T interface{}](ctx context.Context, cursor *m
 	return entities, nil
 }
 
-func MapModelToPB[T1 any, T2 any](pb T1, model T2) *T1 {
-	pbResult := &pb
-	modelVal := reflect.ValueOf(model)
+func MapModelToPB[T1 any, T2 any](target T1, source T2) *T1 {
+	pbResult := &target
+
+	modelVal := reflect.ValueOf(source)
 	pbVal := reflect.ValueOf(pbResult).Elem()
 
 	for i := range modelVal.NumField() {
@@ -136,10 +137,10 @@ func MapModelToPB[T1 any, T2 any](pb T1, model T2) *T1 {
 
 }
 
-func MapPBToModel[T1 any, T2 any](model T1, pb T2) T1 {
-	modelResult := model
+func MapPBToModel[T1 any, T2 any](target T1, source T2) T1 {
+	modelResult := target
 
-	pbVal := reflect.ValueOf(pb).Elem()
+	pbVal := reflect.ValueOf(source).Elem()
 	modelVal := reflect.ValueOf(&modelResult).Elem()
 
 	for i := 0; i < pbVal.NumField(); i++ {

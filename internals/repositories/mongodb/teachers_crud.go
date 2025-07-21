@@ -3,7 +3,6 @@ package mongodb
 import (
 	"context"
 	"log"
-	"reflect"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -50,40 +49,6 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 	}
 
 	return addedTeachers, nil
-}
-
-func mapModelTeacherToPB(teacher models.AddTeacherRequest) *pb.Teacher {
-	pbTeacher := &pb.Teacher{}
-	modelVal := reflect.ValueOf(teacher)
-	pbVal := reflect.ValueOf(pbTeacher).Elem()
-
-	for i := range modelVal.NumField() {
-		modelField := modelVal.Field(i)
-		modelFieldType := modelVal.Type().Field(i)
-		pbField := pbVal.FieldByName(modelFieldType.Name)
-		if pbField.IsValid() && pbField.CanSet() {
-			pbField.Set(modelField)
-		}
-	}
-	return pbTeacher
-}
-
-func mapPBTeacherToModel(pbTeacher *pb.Teacher) models.AddTeacherRequest {
-	modelTeacher := models.AddTeacherRequest{}
-
-	pbVal := reflect.ValueOf(pbTeacher).Elem()
-	modelVal := reflect.ValueOf(&modelTeacher).Elem()
-
-	for i := 0; i < pbVal.NumField(); i++ {
-		pbField := pbVal.Field(i)
-		fieldName := pbVal.Type().Field(i).Name
-
-		modelField := modelVal.FieldByName(fieldName)
-		if modelField.IsValid() && modelField.CanSet() {
-			modelField.Set(pbField)
-		}
-	}
-	return modelTeacher
 }
 
 func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFieldsFromReq []*pb.SortField) ([]*pb.Teacher, error) {

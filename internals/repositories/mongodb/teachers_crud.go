@@ -118,21 +118,9 @@ func GetTeachers(ctx context.Context, teacherFilterFromReq *pb.Teacher, sortFiel
 	}
 	defer cursor.Close(ctx)
 
-	var teachers []*pb.Teacher
-	for cursor.Next(ctx) {
-		var teacher models.Teacher
-		err := cursor.Decode(&teacher)
-		if err != nil {
-			return nil, utils.ErrorHandler(err, "Unable to decode data")
-		}
-		teachers = append(teachers, &pb.Teacher{
-			Id:        teacher.Id.Hex(),
-			FirstName: teacher.FirstName,
-			LastName:  teacher.LastName,
-			Email:     teacher.Email,
-			Class:     teacher.Class,
-			Subject:   teacher.Subject,
-		})
+	teachers, err := utils.DecodeEntities(ctx, cursor, func() *pb.Teacher { return &pb.Teacher{} }, func() *models.Teacher { return &models.Teacher{} })
+	if err != nil {
+		return nil, err
 	}
 
 	return teachers, nil

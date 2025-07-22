@@ -119,6 +119,7 @@ func DecodeEntities[M interface{}, T interface{}](ctx context.Context, cursor *m
 	return entities, nil
 }
 
+// Map model to pb entities
 func MapModelToPB[T1 any, T2 any](target T1, source T2) *T1 {
 	pbResult := &target
 
@@ -137,6 +138,7 @@ func MapModelToPB[T1 any, T2 any](target T1, source T2) *T1 {
 
 }
 
+// Map pb entities to model
 func MapPBToModel[T1 any, T2 any](target T1, source T2) T1 {
 	modelResult := target
 

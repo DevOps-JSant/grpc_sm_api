@@ -43,6 +43,11 @@ func (s *Server) AddTeachers(ctx context.Context, req *pb.Teachers) (*pb.Teacher
 func (s *Server) UpdateTeachers(ctx context.Context, req *pb.Teachers) (*pb.Teachers, error) {
 	teachersFromReq := req.GetTeachers()
 
+	for _, teacher := range teachersFromReq {
+		if teacher.Id == "" {
+			return nil, status.Error(codes.InvalidArgument, "request is in incorrect format: empty ID field is not allowed")
+		}
+	}
 	updatedTeachers, err := mongodb.UpdateTeachers(ctx, teachersFromReq)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

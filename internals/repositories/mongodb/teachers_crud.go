@@ -65,23 +65,16 @@ func AddTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.Teac
 		}
 	}()
 
-	newTeachers := make([]models.AddTeacherRequest, len(teachersFromReq))
-
-	for i, pbTeacher := range teachersFromReq {
-		modelTeacher := utils.MapPBToModel(models.AddTeacherRequest{}, pbTeacher)
-		newTeachers[i] = modelTeacher
-	}
-
 	var addedTeachers []*pb.Teacher
-	for _, teacher := range newTeachers {
-		result, err := client.Database("school").Collection("teachers").InsertOne(ctx, teacher)
+	for _, teacher := range teachersFromReq {
+		addTeacherRequest := utils.MapPBToModel(models.AddTeacherRequest{}, teacher)
+
+		result, err := client.Database("school").Collection("teachers").InsertOne(ctx, addTeacherRequest)
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "Unable to add value to database")
 		}
 
-		// pbTeacher := mapModelTeacherToPB(teacher)
-		pbTeacher := utils.MapModelToPB(pb.Teacher{}, teacher)
-
+		pbTeacher := utils.MapModelToPB(pb.Teacher{}, addTeacherRequest)
 		objectId, ok := result.InsertedID.(bson.ObjectID)
 		if ok {
 			pbTeacher.Id = objectId.Hex()
@@ -111,16 +104,16 @@ func UpdateTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.T
 	for _, teacher := range teachersFromReq {
 
 		// Map pb.Teacher to models.UpdateTeacherRequest
-		modelTeacher := utils.MapPBToModel(models.UpdateTeacherRequest{}, teacher)
+		updateTeacherRequest := utils.MapPBToModel(models.UpdateTeacherRequest{}, teacher)
 
 		// Extract bson.ObjectId from model
-		objectId, err := bson.ObjectIDFromHex(modelTeacher.Id)
+		objectId, err := bson.ObjectIDFromHex(updateTeacherRequest.Id)
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "Invalid id")
 		}
 
 		// Convert models.UpdateTeacherRequest to BSON document
-		modelDoc, err := bson.Marshal(modelTeacher)
+		modelDoc, err := bson.Marshal(updateTeacherRequest)
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "Unable to parse model to BSON document")
 		}
@@ -136,10 +129,10 @@ func UpdateTeachers(ctx context.Context, teachersFromReq []*pb.Teacher) ([]*pb.T
 
 		_, err = client.Database("school").Collection("teachers").UpdateOne(ctx, bson.M{"_id": objectId}, bson.M{"$set": updatedDoc})
 		if err != nil {
-			return nil, utils.ErrorHandler(err, fmt.Sprintf("Unable to update teacher with id %s", modelTeacher.Id))
+			return nil, utils.ErrorHandler(err, fmt.Sprintf("Unable to update teacher with id %s", updateTeacherRequest.Id))
 		}
 
-		updatedTeacher := utils.MapModelToPB(pb.Teacher{}, modelTeacher)
+		updatedTeacher := utils.MapModelToPB(pb.Teacher{}, updateTeacherRequest)
 		updatedTeachers = append(updatedTeachers, updatedTeacher)
 
 	}

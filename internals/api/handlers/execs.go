@@ -29,8 +29,8 @@ func (s *Server) GetExecs(ctx context.Context, req *pb.GetExecsRequest) (*pb.Exe
 	}
 
 	return &pb.Execs{Execs: execs}, nil
-
 }
+
 func (s *Server) AddExecs(ctx context.Context, req *pb.Execs) (*pb.Execs, error) {
 
 	execsFromReq := req.GetExecs()

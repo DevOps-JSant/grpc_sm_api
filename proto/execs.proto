@@ -82,10 +82,10 @@ message  ExecIds {
 }
 
 message GetExecsRequest {
-  Exec Exec = 1;
+  Exec exec = 1;
   repeated SortField sort_by = 2;
-  int32 page_number = 3;
-  int32 page_size = 4;
+  uint32 page_number = 3;
+  uint32 page_size = 4;
 }
 
 message Exec {

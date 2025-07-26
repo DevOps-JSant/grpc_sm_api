@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -89,4 +90,45 @@ func AddStudents(ctx context.Context, studentsFromReq []*pb.Student) ([]*pb.Stud
 	}
 
 	return addedStudents, nil
+}
+
+func DeleteStudents(ctx context.Context, studentIdsFromReq []*pb.StudentId) ([]string, error) {
+
+	// Connect to mongo db
+	client, err := CreateMongoClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Close connection
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Println("Unable to disconnect to mongodb:", err)
+		}
+	}()
+
+	objectIds := make([]bson.ObjectID, len(studentIdsFromReq))
+	for i, studentId := range studentIdsFromReq {
+		objectId, err := bson.ObjectIDFromHex(studentId.Id)
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "Invalid id")
+		}
+		objectIds[i] = objectId
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": objectIds}}
+	result, err := client.Database("school").Collection("students").DeleteMany(ctx, filter)
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "Unable to delete student")
+	}
+
+	if result.DeletedCount == 0 {
+		return nil, utils.ErrorHandler(errors.New("no student deleted"), "no student deleted")
+	}
+
+	deletedIds := make([]string, result.DeletedCount)
+	for i, id := range objectIds {
+		deletedIds[i] = id.Hex()
+	}
+
+	return deletedIds, nil
 }

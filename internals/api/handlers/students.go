@@ -48,3 +48,17 @@ func (s *Server) AddStudents(ctx context.Context, req *pb.Students) (*pb.Student
 	return &pb.Students{Students: addedStudents}, nil
 
 }
+
+func (s *Server) DeleteStudents(ctx context.Context, req *pb.StudentIds) (*pb.DeleteStudentsConfirmation, error) {
+
+	studentIdsFromReq := req.GetIds()
+
+	deletedIds, err := mongodb.DeleteStudents(ctx, studentIdsFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &pb.DeleteStudentsConfirmation{
+		Status:     "Students deleted successfully",
+		DeletedIds: deletedIds,
+	}, nil
+}

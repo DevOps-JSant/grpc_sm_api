@@ -135,11 +135,11 @@ func DeleteExecs(ctx context.Context, execIdsFromReq []*pb.ExecId) ([]string, er
 	filter := bson.M{"_id": bson.M{"$in": objectIds}}
 	result, err := client.Database("school").Collection("execs").DeleteMany(ctx, filter)
 	if err != nil {
-		return nil, utils.ErrorHandler(err, "Unable to delete teacher")
+		return nil, utils.ErrorHandler(err, "Unable to delete exec")
 	}
 
 	if result.DeletedCount == 0 {
-		return nil, utils.ErrorHandler(errors.New("no execs deleted"), "no execs deleted")
+		return nil, utils.ErrorHandler(errors.New("no exec deleted"), "no exec deleted")
 	}
 
 	deletedIds := make([]string, result.DeletedCount)

@@ -48,3 +48,17 @@ func (s *Server) AddExecs(ctx context.Context, req *pb.Execs) (*pb.Execs, error)
 	return &pb.Execs{Execs: addedExecs}, nil
 
 }
+
+func (s *Server) DeleteExecs(ctx context.Context, req *pb.ExecIds) (*pb.DeleteExecsConfirmation, error) {
+
+	execIdsFromReq := req.GetIds()
+
+	deletedIds, err := mongodb.DeleteExecs(ctx, execIdsFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &pb.DeleteExecsConfirmation{
+		Status:     "Execs deleted successfully",
+		DeletedIds: deletedIds,
+	}, nil
+}

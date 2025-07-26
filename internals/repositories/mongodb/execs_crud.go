@@ -108,3 +108,44 @@ func AddExecs(ctx context.Context, execsFromReq []*pb.Exec) ([]*pb.Exec, error) 
 
 	return addedExecs, nil
 }
+
+func DeleteExecs(ctx context.Context, execIdsFromReq []*pb.ExecId) ([]string, error) {
+
+	// Connect to mongo db
+	client, err := CreateMongoClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Close connection
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Println("Unable to disconnect to mongodb:", err)
+		}
+	}()
+
+	objectIds := make([]bson.ObjectID, len(execIdsFromReq))
+	for i, execId := range execIdsFromReq {
+		objectId, err := bson.ObjectIDFromHex(execId.Id)
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "Invalid id")
+		}
+		objectIds[i] = objectId
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": objectIds}}
+	result, err := client.Database("school").Collection("execs").DeleteMany(ctx, filter)
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "Unable to delete teacher")
+	}
+
+	if result.DeletedCount == 0 {
+		return nil, utils.ErrorHandler(errors.New("no execs deleted"), "no execs deleted")
+	}
+
+	deletedIds := make([]string, result.DeletedCount)
+	for i, id := range objectIds {
+		deletedIds[i] = id.Hex()
+	}
+
+	return deletedIds, nil
+}

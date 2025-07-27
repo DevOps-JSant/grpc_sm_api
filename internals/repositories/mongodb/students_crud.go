@@ -110,7 +110,7 @@ func UpdateStudents(ctx context.Context, studentsFromReq []*pb.Student) ([]*pb.S
 	var updatedStudents []*pb.Student
 	for _, student := range studentsFromReq {
 
-		// Map pb.Teacher to models.UpdateTeacherRequest
+		// Map pb.Teacher to models.UpdateStudentRequest
 		updateStudentRequest := utils.MapPBToModel(models.UpdateStudentRequest{}, student)
 
 		// Extract bson.ObjectId from model

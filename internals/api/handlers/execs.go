@@ -49,6 +49,21 @@ func (s *Server) AddExecs(ctx context.Context, req *pb.Execs) (*pb.Execs, error)
 
 }
 
+func (s *Server) UpdateExecs(ctx context.Context, req *pb.Execs) (*pb.Execs, error) {
+	execsFromReq := req.GetExecs()
+
+	for _, exec := range execsFromReq {
+		if exec.Id == "" {
+			return nil, status.Error(codes.InvalidArgument, "request is in incorrect format: empty ID field is not allowed")
+		}
+	}
+	updatedExecs, err := mongodb.UpdateExecs(ctx, execsFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &pb.Execs{Execs: updatedExecs}, nil
+}
+
 func (s *Server) DeleteExecs(ctx context.Context, req *pb.ExecIds) (*pb.DeleteExecsConfirmation, error) {
 
 	execIdsFromReq := req.GetIds()

@@ -88,3 +88,21 @@ func (s *Server) GetStudentCountByClassTeacher(ctx context.Context, req *pb.Teac
 	}, nil
 
 }
+
+func (s *Server) GetStudentsByClassTeacher(ctx context.Context, req *pb.TeacherId) (*pb.Students, error) {
+
+	teacherIdFromReq := req.GetId()
+
+	if teacherIdFromReq == "" {
+		return nil, status.Error(codes.InvalidArgument, "Invalid id")
+	}
+
+	students, err := mongodb.GetStudentsByClassTeacher(ctx, teacherIdFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.Students{
+		Students: students,
+	}, nil
+}

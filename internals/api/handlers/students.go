@@ -48,3 +48,32 @@ func (s *Server) AddStudents(ctx context.Context, req *pb.Students) (*pb.Student
 	return &pb.Students{Students: addedStudents}, nil
 
 }
+
+func (s *Server) UpdateStudents(ctx context.Context, req *pb.Students) (*pb.Students, error) {
+	studentsFromReq := req.GetStudents()
+
+	for _, student := range studentsFromReq {
+		if student.Id == "" {
+			return nil, status.Error(codes.InvalidArgument, "request is in incorrect format: empty ID field is not allowed")
+		}
+	}
+	updatedStudents, err := mongodb.UpdateStudents(ctx, studentsFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &pb.Students{Students: updatedStudents}, nil
+}
+
+func (s *Server) DeleteStudents(ctx context.Context, req *pb.StudentIds) (*pb.DeleteStudentsConfirmation, error) {
+
+	studentIdsFromReq := req.GetIds()
+
+	deletedIds, err := mongodb.DeleteStudents(ctx, studentIdsFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &pb.DeleteStudentsConfirmation{
+		Status:     "Students deleted successfully",
+		DeletedIds: deletedIds,
+	}, nil
+}

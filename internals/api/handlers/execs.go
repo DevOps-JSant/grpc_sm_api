@@ -104,6 +104,14 @@ func (s *Server) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordReque
 	currentPassword := req.GetCurrentPassword()
 	newPassword := req.GetNewPassword()
 
+	if userId == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty id is not allowed")
+	}
+
+	if currentPassword == "" || newPassword == "" {
+		return nil, status.Error(codes.InvalidArgument, "current/new password is required")
+	}
+
 	token, err := mongodb.UpdatePassword(ctx, userId, currentPassword, newPassword)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

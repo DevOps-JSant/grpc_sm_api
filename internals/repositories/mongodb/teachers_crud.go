@@ -251,6 +251,7 @@ func GetStudentsByClassTeacher(ctx context.Context, teacherIdFromReq string) ([]
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "Unable to retrieve data")
 	}
+	defer cursor.Close(ctx)
 
 	students, err := utils.DecodeEntities(ctx, cursor, func() *pb.Student { return &pb.Student{} }, func() *models.Student { return &models.Student{} })
 	if err != nil {

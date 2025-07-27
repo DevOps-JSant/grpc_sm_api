@@ -77,3 +77,23 @@ func (s *Server) DeleteExecs(ctx context.Context, req *pb.ExecIds) (*pb.DeleteEx
 		DeletedIds: deletedIds,
 	}, nil
 }
+
+func (s *Server) Login(ctx context.Context, req *pb.ExecLoginRequest) (*pb.ExecLoginResponse, error) {
+
+	username := req.GetUsername()
+	password := req.GetPassword()
+
+	if username == "" || password == "" {
+		return nil, status.Error(codes.InvalidArgument, "username and password is required")
+	}
+
+	token, err := mongodb.Login(ctx, username, password)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
+	return &pb.ExecLoginResponse{
+		Status: "Login successfully",
+		Token:  token,
+	}, nil
+}

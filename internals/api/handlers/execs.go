@@ -97,3 +97,20 @@ func (s *Server) Login(ctx context.Context, req *pb.ExecLoginRequest) (*pb.ExecL
 		Token:  token,
 	}, nil
 }
+
+func (s *Server) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordRequest) (*pb.UpdatePasswordResponse, error) {
+
+	userId := req.GetId()
+	currentPassword := req.GetCurrentPassword()
+	newPassword := req.GetNewPassword()
+
+	token, err := mongodb.UpdatePassword(ctx, userId, currentPassword, newPassword)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.UpdatePasswordResponse{
+		PasswordUpdated: true,
+		Token:           token,
+	}, nil
+}

@@ -77,3 +77,62 @@ func (s *Server) DeleteExecs(ctx context.Context, req *pb.ExecIds) (*pb.DeleteEx
 		DeletedIds: deletedIds,
 	}, nil
 }
+
+func (s *Server) Login(ctx context.Context, req *pb.ExecLoginRequest) (*pb.ExecLoginResponse, error) {
+
+	username := req.GetUsername()
+	password := req.GetPassword()
+
+	if username == "" || password == "" {
+		return nil, status.Error(codes.InvalidArgument, "username and password is required")
+	}
+
+	token, err := mongodb.Login(ctx, username, password)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
+	return &pb.ExecLoginResponse{
+		Status: "Login successfully",
+		Token:  token,
+	}, nil
+}
+
+func (s *Server) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordRequest) (*pb.UpdatePasswordResponse, error) {
+
+	userId := req.GetId()
+	currentPassword := req.GetCurrentPassword()
+	newPassword := req.GetNewPassword()
+
+	if userId == "" {
+		return nil, status.Error(codes.InvalidArgument, "empty id is not allowed")
+	}
+
+	if currentPassword == "" || newPassword == "" {
+		return nil, status.Error(codes.InvalidArgument, "current/new password is required")
+	}
+
+	token, err := mongodb.UpdatePassword(ctx, userId, currentPassword, newPassword)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.UpdatePasswordResponse{
+		PasswordUpdated: true,
+		Token:           token,
+	}, nil
+}
+
+func (s *Server) DeactivateUser(ctx context.Context, req *pb.ExecIds) (*pb.Confimation, error) {
+
+	userIdsFromReq := req.GetIds()
+
+	err := mongodb.DeactivateUser(ctx, userIdsFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.Confimation{
+		Confirmation: true,
+	}, nil
+}

@@ -68,3 +68,41 @@ func (s *Server) DeleteTeachers(ctx context.Context, req *pb.TeacherIds) (*pb.De
 		DeletedIds: deletedIds,
 	}, nil
 }
+
+func (s *Server) GetStudentCountByClassTeacher(ctx context.Context, req *pb.TeacherId) (*pb.StudentCount, error) {
+
+	teacherIdFromReq := req.GetId()
+
+	if teacherIdFromReq == "" {
+		return nil, status.Error(codes.InvalidArgument, "Invalid id")
+	}
+
+	studentCount, err := mongodb.GetStudentCountByClassTeacher(ctx, teacherIdFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.StudentCount{
+		StudentCount: int32(studentCount),
+		Status:       true,
+	}, nil
+
+}
+
+func (s *Server) GetStudentsByClassTeacher(ctx context.Context, req *pb.TeacherId) (*pb.Students, error) {
+
+	teacherIdFromReq := req.GetId()
+
+	if teacherIdFromReq == "" {
+		return nil, status.Error(codes.InvalidArgument, "Invalid id")
+	}
+
+	students, err := mongodb.GetStudentsByClassTeacher(ctx, teacherIdFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.Students{
+		Students: students,
+	}, nil
+}

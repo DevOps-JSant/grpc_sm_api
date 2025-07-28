@@ -182,3 +182,81 @@ func DeleteTeachers(ctx context.Context, teacherIdsFromReq []*pb.TeacherId) ([]s
 
 	return deletedIds, nil
 }
+
+func GetStudentCountByClassTeacher(ctx context.Context, teacherIdFromReq string) (int, error) {
+	// Connect to mongo db
+	client, err := CreateMongoClient(ctx)
+	if err != nil {
+		return 0, err
+	}
+	// Close connection
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Println("Unable to disconnect to mongodb:", err)
+		}
+	}()
+
+	objectId, err := bson.ObjectIDFromHex(teacherIdFromReq)
+	if err != nil {
+		return 0, utils.ErrorHandler(err, "Invalid id")
+	}
+
+	var teacher models.Teacher
+	err = client.Database("school").Collection("teachers").FindOne(ctx, bson.M{"_id": objectId}).Decode(&teacher)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return 0, utils.ErrorHandler(err, "No teacher found")
+		}
+		return 0, utils.ErrorHandler(err, "Internal error")
+	}
+
+	studentCount, err := client.Database("school").Collection("students").CountDocuments(ctx, bson.M{"class": teacher.Class})
+	if err != nil {
+		return 0, utils.ErrorHandler(err, "Unable to count student by class teacher")
+	}
+
+	return int(studentCount), nil
+}
+
+func GetStudentsByClassTeacher(ctx context.Context, teacherIdFromReq string) ([]*pb.Student, error) {
+	// Connect to mongo db
+	client, err := CreateMongoClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Close connection
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Println("Unable to disconnect to mongodb:", err)
+		}
+	}()
+
+	objectId, err := bson.ObjectIDFromHex(teacherIdFromReq)
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "Invalid id")
+	}
+
+	var teacher models.Teacher
+	err = client.Database("school").Collection("teachers").FindOne(ctx, bson.M{"_id": objectId}).Decode(&teacher)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, utils.ErrorHandler(err, "No teacher found")
+		}
+		return nil, utils.ErrorHandler(err, "Internal error")
+	}
+
+	col := client.Database("school").Collection("students")
+	var cursor *mongo.Cursor
+	cursor, err = col.Find(ctx, bson.M{"class": teacher.Class})
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "Unable to retrieve data")
+	}
+	defer cursor.Close(ctx)
+
+	students, err := utils.DecodeEntities(ctx, cursor, func() *pb.Student { return &pb.Student{} }, func() *models.Student { return &models.Student{} })
+	if err != nil {
+		return nil, err
+	}
+
+	return students, nil
+}

@@ -122,3 +122,17 @@ func (s *Server) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordReque
 		Token:           token,
 	}, nil
 }
+
+func (s *Server) DeactivateUser(ctx context.Context, req *pb.ExecIds) (*pb.Confimation, error) {
+
+	userIdsFromReq := req.GetIds()
+
+	err := mongodb.DeactivateUser(ctx, userIdsFromReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.Confimation{
+		Confirmation: true,
+	}, nil
+}

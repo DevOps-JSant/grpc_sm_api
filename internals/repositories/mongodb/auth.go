@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"jsantdev.com/grpc_sm_api/internals/models"
 	"jsantdev.com/grpc_sm_api/pkg/utils"
+	pb "jsantdev.com/grpc_sm_api/proto/gen"
 )
 
 func Login(ctx context.Context, username, password string) (string, error) {
@@ -37,7 +39,7 @@ func Login(ctx context.Context, username, password string) (string, error) {
 
 	// Check if user is inactive
 	if user.InactiveStatus {
-		return "", utils.ErrorHandler(err, "user is inactive")
+		return "", utils.ErrorHandler(errors.New("user is inactive"), "user is inactive")
 	}
 
 	// Verify password
@@ -125,4 +127,42 @@ func UpdatePassword(ctx context.Context, userId, currentPassword, newPassword st
 
 	return token, nil
 
+}
+
+func DeactivateUser(ctx context.Context, userIdsFromReq []*pb.ExecId) error {
+	// Connect to mongo db
+	client, err := CreateMongoClient(ctx)
+	if err != nil {
+		return err
+	}
+	// Close connection
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Println("Unable to disconnect to mongodb:", err)
+		}
+	}()
+
+	objectIds := make([]bson.ObjectID, len(userIdsFromReq))
+	for i, exec := range userIdsFromReq {
+
+		// Extract bson.ObjectId from model
+		objectId, err := bson.ObjectIDFromHex(exec.Id)
+		if err != nil {
+			return utils.ErrorHandler(err, "Invalid id")
+		}
+		objectIds[i] = objectId
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": objectIds}}
+	update := bson.M{
+		"$set": bson.M{
+			"inactive_status": true,
+		},
+	}
+	_, err = client.Database("school").Collection("execs").UpdateMany(ctx, filter, update)
+	if err != nil {
+		return utils.ErrorHandler(err, "unable to deactive user")
+	}
+
+	return nil
 }

@@ -127,12 +127,26 @@ func (s *Server) DeactivateUser(ctx context.Context, req *pb.ExecIds) (*pb.Confi
 
 	userIdsFromReq := req.GetIds()
 
-	err := mongodb.DeactivateUser(ctx, userIdsFromReq)
-	if err != nil {
+	if err := mongodb.DeactivateUser(ctx, userIdsFromReq); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &pb.Confimation{
 		Confirmation: true,
 	}, nil
+}
+
+func (s *Server) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequest) (*pb.ForgotPasswordResponse, error) {
+
+	email := req.GetEmail()
+
+	if err := mongodb.ForgotPassword(ctx, email); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.ForgotPasswordResponse{
+		Confirmation: true,
+		Message:      "Forgot password email sent",
+	}, nil
+
 }

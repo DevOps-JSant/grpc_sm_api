@@ -283,3 +283,63 @@ func ForgotPassword(ctx context.Context, emailFromReq string) error {
 
 	return nil
 }
+
+func ResetPassword(ctx context.Context, token, newPassword string) error {
+
+	// Connect to mongo db
+	client, err := CreateMongoClient(ctx)
+	if err != nil {
+		return err
+	}
+	// Close connection
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Println("Unable to disconnect to mongodb:", err)
+		}
+	}()
+
+	// decode the token
+	bytes, err := hex.DecodeString(token)
+	if err != nil {
+		return utils.ErrorHandler(err, "Internal error")
+	}
+
+	hashedToken := sha256.Sum256(bytes)
+	hashedTokenString := hex.EncodeToString(hashedToken[:])
+
+	// Get user by password_reset_token
+	filter := bson.M{
+		"password_reset_token": hashedTokenString,
+		"password_token_expires": bson.M{
+			"$gt": time.Now().Format(time.RFC3339),
+		},
+	}
+
+	var user models.Exec
+	err = client.Database("school").Collection("execs").FindOne(ctx, filter).Decode(&user)
+	if err != nil {
+		return utils.ErrorHandler(err, "Invalid token or token expires")
+	}
+
+	// hash the new password
+	hashedPassword, err := utils.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	// Update the password
+	update := bson.M{
+		"$set": bson.M{
+			"password":               hashedPassword,
+			"password_changed_at":    time.Now().Format(time.RFC3339),
+			"password_reset_token":   nil,
+			"password_token_expires": nil,
+		},
+	}
+	_, err = client.Database("school").Collection("execs").UpdateOne(ctx, bson.M{"_id": user.Id}, update)
+	if err != nil {
+		return utils.ErrorHandler(err, "Unable to reset password")
+	}
+
+	return nil
+}

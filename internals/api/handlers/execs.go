@@ -150,3 +150,26 @@ func (s *Server) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordReque
 	}, nil
 
 }
+
+func (s *Server) ResetPassword(ctx context.Context, req *pb.ResetPasswordRequest) (*pb.Confimation, error) {
+
+	token := req.GetResetCode()
+	confirmPassword := req.GetConfirmPassword()
+	newPassword := req.GetNewPassword()
+
+	if confirmPassword == "" || newPassword == "" {
+		return nil, status.Error(codes.InvalidArgument, "new/confirm password is required")
+	}
+
+	if confirmPassword != newPassword {
+		return nil, status.Error(codes.InvalidArgument, "password should match")
+	}
+
+	if err := mongodb.ResetPassword(ctx, token, newPassword); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.Confimation{
+		Confirmation: true,
+	}, nil
+}

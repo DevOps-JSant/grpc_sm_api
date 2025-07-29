@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"jsantdev.com/grpc_sm_api/internals/api/handlers"
+	"jsantdev.com/grpc_sm_api/internals/api/interceptors"
 	pb "jsantdev.com/grpc_sm_api/proto/gen"
 )
 
@@ -61,7 +62,7 @@ func runGRPCServer(certFile, keyFile string) {
 		log.Fatalln("Unable to load credentials:", err)
 	}
 
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
+	grpcServer := grpc.NewServer(grpc.Creds(creds), grpc.ChainUnaryInterceptor(interceptors.ResponseTimeInterceptor))
 
 	pb.RegisterTeacherServiceServer(grpcServer, &handlers.Server{})
 	pb.RegisterStudentServiceServer(grpcServer, &handlers.Server{})

@@ -3,6 +3,7 @@ package interceptors
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -35,13 +36,18 @@ func AuthenticationInterceptor(ctx context.Context, req interface{}, info *grpc.
 	}
 
 	authHeader, ok := md["authorization"]
-
 	if !ok {
 		return nil, status.Error(codes.Unauthenticated, "authorization header missing")
 	}
 
 	token := strings.TrimPrefix(authHeader[0], "Bearer ")
 	token = strings.TrimSpace(token)
+
+	isLoggedOut := utils.JwtStore.IsLoggedOut(token)
+
+	if isLoggedOut {
+		return nil, status.Error(codes.Unauthenticated, "token is invalid")
+	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 
@@ -96,10 +102,18 @@ func AuthenticationInterceptor(ctx context.Context, req interface{}, info *grpc.
 		return nil, status.Error(codes.Unauthenticated, "invalid role claims")
 	}
 
+	expiresAtF64, ok := claims["exp"].(float64)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "invalid expiresAt claims")
+	}
+	expiresAtI64 := int64(expiresAtF64)
+	expiresAt := fmt.Sprintf("%v", expiresAtI64)
+
 	ctxValue := context.WithValue(ctx, utils.ContextKey("uid"), userId)
 	ctxValue = context.WithValue(ctxValue, utils.ContextKey("username"), userName)
 	ctxValue = context.WithValue(ctxValue, utils.ContextKey("email"), email)
 	ctxValue = context.WithValue(ctxValue, utils.ContextKey("role"), role)
+	ctxValue = context.WithValue(ctxValue, utils.ContextKey("expiresAt"), expiresAt)
 
 	log.Println("Sending response from Authentication interceptor")
 	return handler(ctxValue, req)

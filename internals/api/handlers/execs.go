@@ -2,10 +2,16 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"jsantdev.com/grpc_sm_api/internals/repositories/mongodb"
+	"jsantdev.com/grpc_sm_api/pkg/utils"
 	pb "jsantdev.com/grpc_sm_api/proto/gen"
 )
 
@@ -171,5 +177,41 @@ func (s *Server) ResetPassword(ctx context.Context, req *pb.ResetPasswordRequest
 
 	return &pb.Confimation{
 		Confirmation: true,
+	}, nil
+}
+
+func (s *Server) Logout(ctx context.Context, req *pb.EmptyRequest) (*pb.ExecLogoutResponsesponse, error) {
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "no metadata available")
+	}
+
+	authHeader, ok := md["authorization"]
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "authorization header missing")
+	}
+
+	token := strings.TrimPrefix(authHeader[0], "Bearer ")
+	token = strings.TrimSpace(token)
+
+	if token == "" {
+		return nil, status.Error(codes.Unauthenticated, "authorization header missing")
+	}
+
+	expiryTimestamp := ctx.Value(utils.ContextKey("expiresAt"))
+	expiryTimestampStr := fmt.Sprintf("%v", expiryTimestamp)
+
+	expiryTimeInt, err := strconv.ParseInt(expiryTimestampStr, 10, 64)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "unable to extract exipiry time")
+	}
+
+	expiryTime := time.Unix(expiryTimeInt, 0)
+
+	utils.JwtStore.AddToken(token, expiryTime)
+
+	return &pb.ExecLogoutResponsesponse{
+		LoggedOut: true,
 	}, nil
 }

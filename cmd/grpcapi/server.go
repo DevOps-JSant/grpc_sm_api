@@ -64,7 +64,7 @@ func runGRPCServer(certFile, keyFile string) {
 	}
 
 	rl := interceptors.NewRateLimiter(10, time.Minute)
-	grpcServer := grpc.NewServer(grpc.Creds(creds), grpc.ChainUnaryInterceptor(interceptors.ResponseTimeInterceptor, rl.RateLimiterInterceptor))
+	grpcServer := grpc.NewServer(grpc.Creds(creds), grpc.ChainUnaryInterceptor(interceptors.ResponseTimeInterceptor, rl.RateLimiterInterceptor, interceptors.AuthenticationInterceptor))
 
 	pb.RegisterTeacherServiceServer(grpcServer, &handlers.Server{})
 	pb.RegisterStudentServiceServer(grpcServer, &handlers.Server{})

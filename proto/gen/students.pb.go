@@ -7,6 +7,7 @@
 package grpcapipb
 
 import (
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -451,7 +452,7 @@ var File_students_proto protoreflect.FileDescriptor
 
 const file_students_proto_rawDesc = "" +
 	"\n" +
-	"\x0estudents.proto\x12\x04main\"U\n" +
+	"\x0estudents.proto\x12\x04main\x1a\x17validate/validate.proto\"U\n" +
 	"\x1aDeleteStudentsConfirmation\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x1f\n" +
 	"\vdeleted_ids\x18\x02 \x03(\tR\n" +
@@ -469,14 +470,14 @@ const file_students_proto_rawDesc = "" +
 	"\tpage_size\x18\x04 \x01(\rR\bpageSize\"D\n" +
 	"\tSortField\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12!\n" +
-	"\x05order\x18\x02 \x01(\x0e2\v.main.OrderR\x05order\"\x81\x01\n" +
+	"\x05order\x18\x02 \x01(\x0e2\v.main.OrderR\x05order\"\xcf\x01\n" +
 	"\aStudent\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x124\n" +
 	"\n" +
-	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1b\n" +
-	"\tlast_name\x18\x03 \x01(\tR\blastName\x12\x14\n" +
-	"\x05email\x18\x04 \x01(\tR\x05email\x12\x14\n" +
-	"\x05class\x18\x05 \x01(\tR\x05class\"5\n" +
+	"first_name\x18\x02 \x01(\tB\x15\xfaB\x12r\x10\x10\x012\f^[A-Za-z ]*$R\tfirstName\x122\n" +
+	"\tlast_name\x18\x03 \x01(\tB\x15\xfaB\x12r\x10\x10\x012\f^[A-Za-z ]*$R\blastName\x12\x1d\n" +
+	"\x05email\x18\x04 \x01(\tB\a\xfaB\x04r\x02`\x01R\x05email\x12+\n" +
+	"\x05class\x18\x05 \x01(\tB\x15\xfaB\x12r\x10\x10\x012\f^[1-9][A-Z]$R\x05class\"5\n" +
 	"\bStudents\x12)\n" +
 	"\bstudents\x18\x01 \x03(\v2\r.main.StudentR\bstudents*\x1a\n" +
 	"\x05Order\x12\a\n" +

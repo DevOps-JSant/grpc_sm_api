@@ -2,7 +2,6 @@ package interceptors
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 
 func ResponseTimeInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
+	log.Println("Received request in ResponseTime interceptor")
 	// Record the start time
 	start := time.Now()
 
@@ -24,11 +24,11 @@ func ResponseTimeInterceptor(ctx context.Context, req interface{}, info *grpc.Un
 
 	// Log the request details with duration
 	st, _ := status.FromError(err)
-	fmt.Printf("Method: %s, Status: %d Duration: %v\n", info.FullMethod, st.Code(), duration)
+	log.Printf("Method: %s, Status: %d Duration: %v\n", info.FullMethod, st.Code(), duration)
 
 	md := metadata.Pairs("X-Response-Time", duration.String())
 	grpc.SetHeader(ctx, md)
 
-	log.Println("Sending response from ResponseTimeInterceptor")
+	log.Println("Sending response from ResponseTime interceptor")
 	return resp, err
 }

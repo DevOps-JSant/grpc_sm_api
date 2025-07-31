@@ -41,6 +41,11 @@ func (s *Server) AddStudents(ctx context.Context, req *pb.Students) (*pb.Student
 		}
 	}
 
+	err := req.Validate()
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request %v", err)
+	}
+
 	addedStudents, err := mongodb.AddStudents(ctx, studentsFromReq)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

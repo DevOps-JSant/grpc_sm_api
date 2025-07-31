@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -36,4 +37,45 @@ func GenerateToken(userId, userName, email, role string) (string, error) {
 		return "", ErrorHandler(err, "Unable to generate token")
 	}
 	return signedTokenString, nil
+}
+
+var JwtStore = JWTStore{
+	tokens: make(map[string]time.Time),
+}
+
+type JWTStore struct {
+	tokens map[string]time.Time
+	mu     sync.Mutex
+}
+
+// func NewJWTStore() *JWTStore {
+// 	return &JWTStore{
+// 		tokens: make(map[string]time.Time),
+// 	}
+// }
+
+func (store *JWTStore) AddToken(token string, exiryTime time.Time) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	store.tokens[token] = exiryTime
+}
+
+func (store *JWTStore) CleanUpExpireTokens() {
+	for {
+		time.Sleep(time.Second * 2)
+		store.mu.Lock()
+		for token, timeStamp := range store.tokens {
+			if time.Now().After(timeStamp) {
+				delete(store.tokens, token)
+			}
+		}
+		store.mu.Unlock()
+	}
+}
+
+func (store *JWTStore) IsLoggedOut(token string) bool {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	_, ok := store.tokens[token]
+	return ok
 }

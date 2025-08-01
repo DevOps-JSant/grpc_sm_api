@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"jsantdev.com/grpc_sm_api/internals/api/handlers"
 	"jsantdev.com/grpc_sm_api/internals/api/interceptors"
+	"jsantdev.com/grpc_sm_api/pkg/utils"
 	pb "jsantdev.com/grpc_sm_api/proto/gen"
 )
 
@@ -57,6 +58,8 @@ func runGRPCServer(certFile, keyFile string) {
 	if err != nil {
 		log.Fatal("Failed to listen:", err)
 	}
+
+	go utils.JwtStore.CleanUpExpireTokens()
 
 	creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
 	if err != nil {

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -67,6 +68,7 @@ func (store *JWTStore) CleanUpExpireTokens() {
 		for token, timeStamp := range store.tokens {
 			if time.Now().After(timeStamp) {
 				delete(store.tokens, token)
+				log.Println("Cleaning up expired tokens")
 			}
 		}
 		store.mu.Unlock()
